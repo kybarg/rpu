@@ -128,6 +128,8 @@ class RPUPrinter {
       fromEvents(this.eventEmitter, ['SUCCESS'], ['ERROR', 'TIMED_OUT', 'CLOSE'])
         .then(
           ({ args }) => {
+            this.processing = false;
+            this.currentCommand = null;
             try {
               const result = decode(this.currentCommand, args.slice()[0]);
               resolve(result);
@@ -137,12 +139,10 @@ class RPUPrinter {
           },
         )
         .catch(({ args }) => {
-          reject(args);
-        })
-        .finally(() => {
           this.processing = false;
           this.currentCommand = null;
-        });
+          reject(args);
+        })
     });
 
   };
