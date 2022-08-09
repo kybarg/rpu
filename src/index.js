@@ -61,10 +61,10 @@ class RPUPrinter {
   }
 
   open = () => new Promise((resolve, reject) => {
-    debug('HOST > RPU', chalk.cyan('OPEN'))
+    debug('HOST > RPU', chalk.cyan('OPEN'));
     this.port.open(error => {
       if (error) reject(error);
-      debug('HOST < RPU', chalk.yellow('OPENED'))
+      debug('HOST < RPU', chalk.yellow('OPENED'));
       resolve();
     });
   });
@@ -89,14 +89,14 @@ class RPUPrinter {
 
   timer = (set = true) => {
     if (set) {
-      clearTimeout(this.timeout)
+      clearTimeout(this.timeout);
       this.timeout = setTimeout(() => {
-        this.eventEmitter.emit('TIMED_OUT', new Error('No response in 1s'))
-      }, 1000)
+        this.eventEmitter.emit('TIMED_OUT', new Error('No response in 1s'));
+      }, 1000);
     } else {
-      clearTimeout(this.timeout)
+      clearTimeout(this.timeout);
     }
-  }
+  };
 
   command = (name, params) => {
     if (!commands[name]) {
@@ -142,7 +142,7 @@ class RPUPrinter {
           this.processing = false;
           this.currentCommand = null;
           reject(args);
-        })
+        });
     });
 
   };

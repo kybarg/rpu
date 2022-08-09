@@ -148,9 +148,9 @@ class EscPosEncoder {
  *
  */
   initialize() {
-    this._queue([
-      0x1b, 0x21,
-    ]);
+    // this._queue([
+    //   0x1b, 0x21,
+    // ]);
 
     this._flush();
 
