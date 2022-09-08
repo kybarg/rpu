@@ -18,9 +18,6 @@
   ],
   "dependencies": {
     "@serialport/parser-packet-length": "^10.3.0",
-    "canvas": "^2.9.3",
-    "canvas-dither": "^1.0.1",
-    "canvas-flatten": "^1.0.1",
     "chalk": "^4.1.2",
     "codepage-encoder": "^1.0.0",
     "debug": "^4.3.4",

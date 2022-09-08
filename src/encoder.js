@@ -1,7 +1,7 @@
 const linewrap = require('linewrap');
-const { createCanvas } = require('canvas');
-const Dither = require('canvas-dither');
-const Flatten = require('canvas-flatten');
+// const { createCanvas } = require('canvas');
+// const Dither = require('canvas-dither');
+// const Flatten = require('canvas-flatten');
 
 
 /**
@@ -651,118 +651,118 @@ class EscPosEncoder {
  * @return {object}                  Return the object, for easy chaining commands
  *
  */
-  image(element, width, height, algorithm, threshold) {
-    if (this._embedded) {
-      throw new Error('Images are not supported in table cells or boxes');
-    }
+  // image(element, width, height, algorithm, threshold) {
+  //   if (this._embedded) {
+  //     throw new Error('Images are not supported in table cells or boxes');
+  //   }
 
-    if (width % 8 !== 0) {
-      throw new Error('Width must be a multiple of 8');
-    }
+  //   if (width % 8 !== 0) {
+  //     throw new Error('Width must be a multiple of 8');
+  //   }
 
-    if (height % 8 !== 0) {
-      throw new Error('Height must be a multiple of 8');
-    }
+  //   if (height % 8 !== 0) {
+  //     throw new Error('Height must be a multiple of 8');
+  //   }
 
-    if (typeof algorithm === 'undefined') {
-      algorithm = 'threshold';
-    }
+  //   if (typeof algorithm === 'undefined') {
+  //     algorithm = 'threshold';
+  //   }
 
-    if (typeof threshold === 'undefined') {
-      threshold = 128;
-    }
+  //   if (typeof threshold === 'undefined') {
+  //     threshold = 128;
+  //   }
 
-    const canvas = createCanvas(width, height);
-    const context = canvas.getContext('2d');
-    context.drawImage(element, 0, 0, width, height);
-    let image = context.getImageData(0, 0, width, height);
+  //   const canvas = createCanvas(width, height);
+  //   const context = canvas.getContext('2d');
+  //   context.drawImage(element, 0, 0, width, height);
+  //   let image = context.getImageData(0, 0, width, height);
 
-    image = Flatten.flatten(image, [0xff, 0xff, 0xff]);
+  //   image = Flatten.flatten(image, [0xff, 0xff, 0xff]);
 
-    switch (algorithm) {
-    case 'threshold': image = Dither.threshold(image, threshold); break;
-    case 'bayer': image = Dither.bayer(image, threshold); break;
-    case 'floydsteinberg': image = Dither.floydsteinberg(image); break;
-    case 'atkinson': image = Dither.atkinson(image); break;
-    }
+  //   switch (algorithm) {
+  //   case 'threshold': image = Dither.threshold(image, threshold); break;
+  //   case 'bayer': image = Dither.bayer(image, threshold); break;
+  //   case 'floydsteinberg': image = Dither.floydsteinberg(image); break;
+  //   case 'atkinson': image = Dither.atkinson(image); break;
+  //   }
 
-    const getPixel = (x, y) => x < width && y < height ? (image.data[((width * y) + x) * 4] > 0 ? 0 : 1) : 0;
+  //   const getPixel = (x, y) => x < width && y < height ? (image.data[((width * y) + x) * 4] > 0 ? 0 : 1) : 0;
 
-    const getColumnData = (width, height) => {
-      const data = [];
+  //   const getColumnData = (width, height) => {
+  //     const data = [];
 
-      for (let s = 0; s < Math.ceil(height / 24); s++) {
-        const bytes = new Uint8Array(width * 3);
+  //     for (let s = 0; s < Math.ceil(height / 24); s++) {
+  //       const bytes = new Uint8Array(width * 3);
 
-        for (let x = 0; x < width; x++) {
-          for (let c = 0; c < 3; c++) {
-            for (let b = 0; b < 8; b++) {
-              bytes[(x * 3) + c] |= getPixel(x, (s * 24) + b + (8 * c)) << (7 - b);
-            }
-          }
-        }
+  //       for (let x = 0; x < width; x++) {
+  //         for (let c = 0; c < 3; c++) {
+  //           for (let b = 0; b < 8; b++) {
+  //             bytes[(x * 3) + c] |= getPixel(x, (s * 24) + b + (8 * c)) << (7 - b);
+  //           }
+  //         }
+  //       }
 
-        data.push(bytes);
-      }
+  //       data.push(bytes);
+  //     }
 
-      return data;
-    };
+  //     return data;
+  //   };
 
-    const getRowData = (width, height) => {
-      const bytes = new Uint8Array((width * height) >> 3);
+  //   const getRowData = (width, height) => {
+  //     const bytes = new Uint8Array((width * height) >> 3);
 
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x = x + 8) {
-          for (let b = 0; b < 8; b++) {
-            bytes[(y * (width >> 3)) + (x >> 3)] |= getPixel(x + b, y) << (7 - b);
-          }
-        }
-      }
+  //     for (let y = 0; y < height; y++) {
+  //       for (let x = 0; x < width; x = x + 8) {
+  //         for (let b = 0; b < 8; b++) {
+  //           bytes[(y * (width >> 3)) + (x >> 3)] |= getPixel(x + b, y) << (7 - b);
+  //         }
+  //       }
+  //     }
 
-      return bytes;
-    };
+  //     return bytes;
+  //   };
 
 
-    if (this._cursor != 0) {
-      this.newline();
-    }
+  //   if (this._cursor != 0) {
+  //     this.newline();
+  //   }
 
-    /* Encode images with ESC * */
+  //   /* Encode images with ESC * */
 
-    if (this._options.imageMode == 'column') {
-      this._queue([
-        0x1b, 0x33, 0x24,
-      ]);
+  //   if (this._options.imageMode == 'column') {
+  //     this._queue([
+  //       0x1b, 0x33, 0x24,
+  //     ]);
 
-      getColumnData(width, height).forEach((bytes) => {
-        this._queue([
-          0x1b, 0x2a, 0x21,
-          (width) & 0xff, (((width) >> 8) & 0xff),
-          bytes,
-          0x0a,
-        ]);
-      });
+  //     getColumnData(width, height).forEach((bytes) => {
+  //       this._queue([
+  //         0x1b, 0x2a, 0x21,
+  //         (width) & 0xff, (((width) >> 8) & 0xff),
+  //         bytes,
+  //         0x0a,
+  //       ]);
+  //     });
 
-      this._queue([
-        0x1b, 0x32,
-      ]);
-    }
+  //     this._queue([
+  //       0x1b, 0x32,
+  //     ]);
+  //   }
 
-    /* Encode images with GS v */
+  //   /* Encode images with GS v */
 
-    if (this._options.imageMode == 'raster') {
-      this._queue([
-        0x1d, 0x76, 0x30, 0x00,
-        (width >> 3) & 0xff, (((width >> 3) >> 8) & 0xff),
-        height & 0xff, ((height >> 8) & 0xff),
-        getRowData(width, height),
-      ]);
-    }
+  //   if (this._options.imageMode == 'raster') {
+  //     this._queue([
+  //       0x1d, 0x76, 0x30, 0x00,
+  //       (width >> 3) & 0xff, (((width >> 3) >> 8) & 0xff),
+  //       height & 0xff, ((height >> 8) & 0xff),
+  //       getRowData(width, height),
+  //     ]);
+  //   }
 
-    this._flush();
+  //   this._flush();
 
-    return this;
-  }
+  //   return this;
+  // }
 
   /**
  * Cut paper
