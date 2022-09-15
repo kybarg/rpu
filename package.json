@@ -1,6 +1,6 @@
 {
   "name": "@kybarg/rpu",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Node.js implementation of RPU printer protocol",
   "main": "src",
   "scripts": {
