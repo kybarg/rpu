@@ -10,7 +10,7 @@ const commands = require('./commands.list');
 const debug = Debug('rpu');
 
 class RPUPrinter {
-  constructor({ path }) {
+  constructor({ path, ...options }) {
     this.eventEmitter = new EventEmitter();
 
     this.processing = false;
@@ -18,11 +18,12 @@ class RPUPrinter {
 
     this.port = new SerialPort({
       path,
-      baudRate: 9600,
+      baudRate: 115200,
       dataBits: 8,
       stopBits: 1,
       parity: 'none',
       autoOpen: false,
+      ...options,
     });
 
     const parser = this.port.pipe(new PacketLengthParser({
@@ -142,7 +143,10 @@ class RPUPrinter {
           this.processing = false;
           this.currentCommand = null;
           reject(args);
-        });
+        })
+        .finally(() => {
+          this.enq(false);
+        })
     });
 
   };
