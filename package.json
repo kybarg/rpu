@@ -5,6 +5,7 @@
   "main": "src",
   "scripts": {
     "lint": "eslint src",
+    "format": "prettier src --write",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -29,6 +30,12 @@
     "serialport": "^10.4.0"
   },
   "devDependencies": {
-    "eslint": "^8.21.0"
+    "eslint": "^8.21.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-node": "^11.1.0",
+    "prettier": "^2.7.1"
+  },
+  "engines" : {
+    "node" : ">=14.0.0"
   }
 }

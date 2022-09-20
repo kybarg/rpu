@@ -8,13 +8,13 @@ module.exports = {
   0x37: 'Spare',
   0x38: 'Cutter sensor on/off timeout error',
   0x39: 'Paper Breakage Failure',
-  0x3A: 'Unspecified Command Error',
-  0x3B: 'Font Download Failure due to Font Type Setting Error',
+  0x3a: 'Unspecified Command Error',
+  0x3b: 'Font Download Failure due to Font Type Setting Error',
   0x41: 'Image Read/Print Error (Image data > 20KB, Image width is not multiple of 8, Image length > 576)',
   0x43: 'The Font specified does not exist',
   0x45: 'Incorrect Command usage after ‘A’ Command',
   0x49: 'QR Code Data Length abnormal',
   0x51: 'USB Download Data Timeout',
   0x52: 'USB Download Data Bcc Miss Match',
-  0x53: 'Checksum mismatch between USB Download data and Command data '
+  0x53: 'Checksum mismatch between USB Download data and Command data ',
 };

@@ -14,8 +14,8 @@ function encode(name, params = []) {
   const ETX = 0x03;
 
   const length = [MI, ...DATA].length;
-  const LEN1 = length & 0xFF;
-  const LEN2 = (length >> 8) & 0xFF;
+  const LEN1 = length & 0xff;
+  const LEN2 = (length >> 8) & 0xff;
 
   const BCC = CRC8([LEN1, LEN2, MI, ...DATA, ETX]);
 
@@ -44,21 +44,23 @@ function decode(command, buffer) {
     return result;
   }
 
-
   // normal
-  if (MI === 0x4F) {
+  if (MI === 0x4f) {
     result.success = true;
 
     if (command === 'PROGRAM_VERSION_READ') {
       result.data = {
         printerName: DATA.slice(0, 3).toString(),
-        version: `${DATA.slice(3, 5).readInt8()}.${DATA.slice(4, 6).readInt8()}`,
+        version: `${DATA.slice(3, 5).readInt8()}.${DATA.slice(
+          4,
+          6
+        ).readInt8()}`,
       };
     } else if (command === 'SETTING_READ') {
       const fonts = {
         0: 'hanmega1252',
         1: 'windows1250',
-        2: 'windows1251'
+        2: 'windows1251',
       };
 
       result.data = {
@@ -87,7 +89,7 @@ function decode(command, buffer) {
     const statuses = {
       0x30: 'internal',
       0x31: 'beforeAction',
-      0x38: 'afterAction'
+      0x38: 'afterAction',
     };
 
     result.error = {
@@ -145,8 +147,6 @@ function decode(command, buffer) {
    * paper load 0
    * near end 1
    */
-
-
 
   return result;
 }

@@ -26,15 +26,21 @@ class RPUPrinter {
       ...options,
     });
 
-    const parser = this.port.pipe(new PacketLengthParser({
-      delimiter: 0x02,
-      packetOverhead: 5,
-      lengthBytes: 2,
-      lengthOffset: 1,
-    }));
+    const parser = this.port.pipe(
+      new PacketLengthParser({
+        delimiter: 0x02,
+        packetOverhead: 5,
+        lengthBytes: 2,
+        lengthOffset: 1,
+      })
+    );
 
-    parser.on('data', buffer => {
-      debug('HOST < RPU', chalk.yellow(buffer.toString('hex')), chalk.green(this.currentCommand));
+    parser.on('data', (buffer) => {
+      debug(
+        'HOST < RPU',
+        chalk.yellow(buffer.toString('hex')),
+        chalk.green(this.currentCommand)
+      );
       this.eventEmitter.emit('SUCCESS', buffer);
       this.enq(false);
       this.timer(false);
@@ -56,39 +62,53 @@ class RPUPrinter {
     this.port.on('data', (buffer) => {
       if (buffer.length === 1 && buffer[0] === 0x06) {
         this.timer(true);
-        debug('HOST < RPU', chalk.yellow(buffer.toString('hex')), chalk.green('ACK'));
+        debug(
+          'HOST < RPU',
+          chalk.yellow(buffer.toString('hex')),
+          chalk.green('ACK')
+        );
       }
     });
   }
 
-  open = () => new Promise((resolve, reject) => {
-    debug('HOST > RPU', chalk.cyan('OPEN'));
-    this.port.open(error => {
-      if (error) reject(error);
-      debug('HOST < RPU', chalk.yellow('OPENED'));
-      resolve();
+  open() {
+    return new Promise((resolve, reject) => {
+      debug('HOST > RPU', chalk.cyan('OPEN'));
+      this.port.open((error) => {
+        if (error) reject(error);
+        debug('HOST < RPU', chalk.yellow('OPENED'));
+        resolve();
+      });
     });
-  });
+  }
 
-  enq = (start = true) => {
+  enq(start = true) {
     if (start) {
       this.enqIntreval = setInterval(() => {
-        debug('HOST > RPU', chalk.cyan(Buffer.from([0x05]).toString('hex')), chalk.green('ENQ'));
+        debug(
+          'HOST > RPU',
+          chalk.cyan(Buffer.from([0x05]).toString('hex')),
+          chalk.green('ENQ')
+        );
         this.port.write(Buffer.from([0x05]));
         this.port.drain();
       }, 300);
     } else {
       clearInterval(this.enqIntreval);
     }
-  };
+  }
 
-  ack = () => {
-    debug('HOST > RPU', chalk.cyan(Buffer.from([0x06]).toString('hex')), chalk.green('ACK'));
+  ack() {
+    debug(
+      'HOST > RPU',
+      chalk.cyan(Buffer.from([0x06]).toString('hex')),
+      chalk.green('ACK')
+    );
     this.port.write(Buffer.from([0x06]));
     this.port.drain();
-  };
+  }
 
-  timer = (set = true) => {
+  timer(set = true) {
     if (set) {
       clearTimeout(this.timeout);
       this.timeout = setTimeout(() => {
@@ -97,9 +117,9 @@ class RPUPrinter {
     } else {
       clearTimeout(this.timeout);
     }
-  };
+  }
 
-  command = (name, params) => {
+  command(name, params) {
     if (!commands[name]) {
       return Promise.reject(new Error('Unknown command'));
     }
@@ -113,7 +133,11 @@ class RPUPrinter {
     this.currentCommand = name;
 
     const data = encode(name, params);
-    debug('HOST > RPU', chalk.cyan(Buffer.from(data).toString('hex')), chalk.green(name));
+    debug(
+      'HOST > RPU',
+      chalk.cyan(Buffer.from(data).toString('hex')),
+      chalk.green(name)
+    );
 
     this.port.write(data);
     this.port.drain((error) => {
@@ -126,19 +150,21 @@ class RPUPrinter {
     });
 
     return new Promise((resolve, reject) => {
-      fromEvents(this.eventEmitter, ['SUCCESS'], ['ERROR', 'TIMED_OUT', 'CLOSE'])
-        .then(
-          ({ args }) => {
-            this.processing = false;
-            this.currentCommand = null;
-            try {
-              const result = decode(this.currentCommand, args.slice()[0]);
-              resolve(result);
-            } catch (error) {
-              reject(error);
-            }
-          },
-        )
+      fromEvents(
+        this.eventEmitter,
+        ['SUCCESS'],
+        ['ERROR', 'TIMED_OUT', 'CLOSE']
+      )
+        .then(({ args }) => {
+          this.processing = false;
+          this.currentCommand = null;
+          try {
+            const result = decode(this.currentCommand, args.slice()[0]);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        })
         .catch(({ args }) => {
           this.processing = false;
           this.currentCommand = null;
@@ -146,10 +172,9 @@ class RPUPrinter {
         })
         .finally(() => {
           this.enq(false);
-        })
+        });
     });
-
-  };
+  }
 }
 
 module.exports = RPUPrinter;

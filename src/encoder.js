@@ -3,37 +3,48 @@ const linewrap = require('linewrap');
 // const Dither = require('canvas-dither');
 // const Flatten = require('canvas-flatten');
 
-
 /**
  * Create a byte stream based on commands for ESC/POS printers
  */
 class EscPosEncoder {
   /**
- * Create a new object
- *
- * @param  {object}   options   Object containing configuration options
-*/
+   * Create a new object
+   *
+   * @param  {object}   options   Object containing configuration options
+   */
   constructor(options) {
     this._reset(options);
   }
 
   /**
- * Reset the state of the object
- *
- * @param  {object}   options   Object containing configuration options
-*/
+   * Reset the state of the object
+   *
+   * @param  {object}   options   Object containing configuration options
+   */
   _reset(options) {
-    this._options = Object.assign({
-      width: null,
-      embedded: false,
-      wordWrap: true,
-      imageMode: 'column',
-      codepageMapping: 'epson',
-      codepageCandidates: [
-        'cp437', 'cp858', 'cp860', 'cp861', 'cp863', 'cp865',
-        'cp852', 'cp857', 'cp855', 'cp866', 'cp869',
-      ],
-    }, options);
+    this._options = Object.assign(
+      {
+        width: null,
+        embedded: false,
+        wordWrap: true,
+        imageMode: 'column',
+        codepageMapping: 'epson',
+        codepageCandidates: [
+          'cp437',
+          'cp858',
+          'cp860',
+          'cp861',
+          'cp863',
+          'cp865',
+          'cp852',
+          'cp857',
+          'cp855',
+          'cp866',
+          'cp869',
+        ],
+      },
+      options
+    );
 
     this._embedded = this._options.width && this._options.embedded;
 
@@ -43,48 +54,48 @@ class EscPosEncoder {
     this._codepage = 'ascii';
 
     this._state = {
-      'codepage': 0,
-      'align': 'left',
-      'bold': false,
-      'italic': false,
-      'underline': false,
-      'invert': false,
-      'width': 1,
-      'height': 1,
+      codepage: 0,
+      align: 'left',
+      bold: false,
+      italic: false,
+      underline: false,
+      invert: false,
+      width: 1,
+      height: 1,
     };
   }
 
   /**
- * Encode a string with the current code page
- *
- * @param  {string}   value  String to encode
- * @return {object}          Encoded string as a ArrayBuffer
- *
-*/
+   * Encode a string with the current code page
+   *
+   * @param  {string}   value  String to encode
+   * @return {object}          Encoded string as a ArrayBuffer
+   *
+   */
   _encode(value) {
     return Buffer.from(value, 'ascii');
   }
 
   /**
- * Add commands to the queue
- *
- * @param  {array}   value  Add array of numbers, arrays, buffers or Uint8Arrays to add to the buffer
- *
-*/
+   * Add commands to the queue
+   *
+   * @param  {array}   value  Add array of numbers, arrays, buffers or Uint8Arrays to add to the buffer
+   *
+   */
   _queue(value) {
     value.forEach((item) => this._queued.push(item));
   }
 
   /**
- * Flush current queue to the buffer
- *
-*/
+   * Flush current queue to the buffer
+   *
+   */
   _flush() {
     if (this._embedded) {
       let indent = this._options.width - this._cursor;
 
       if (this._state.align == 'left') {
-        this._queued.push((new Array(indent)).fill(0x20));
+        this._queued.push(new Array(indent).fill(0x20));
       }
 
       if (this._state.align == 'center') {
@@ -92,16 +103,16 @@ class EscPosEncoder {
         indent = indent >> 1;
 
         if (indent > 0) {
-          this._queued.push((new Array(indent)).fill(0x20));
+          this._queued.push(new Array(indent).fill(0x20));
         }
 
         if (indent + remainder > 0) {
-          this._queued.unshift((new Array(indent + remainder)).fill(0x20));
+          this._queued.unshift(new Array(indent + remainder).fill(0x20));
         }
       }
 
       if (this._state.align == 'right') {
-        this._queued.unshift((new Array(indent)).fill(0x20));
+        this._queued.unshift(new Array(indent).fill(0x20));
       }
     }
 
@@ -112,17 +123,22 @@ class EscPosEncoder {
   }
 
   /**
- * Wrap the text while respecting the position of the cursor
- *
- * @param  {string}   value     String to wrap after the width of the paper has been reached
- * @param  {number}   position  Position on which to force a wrap
- * @return {array}              Array with each line
-*/
+   * Wrap the text while respecting the position of the cursor
+   *
+   * @param  {string}   value     String to wrap after the width of the paper has been reached
+   * @param  {number}   position  Position on which to force a wrap
+   * @return {array}              Array with each line
+   */
   _wrap(value, position) {
     if (position || (this._options.wordWrap && this._options.width)) {
       const indent = '-'.repeat(this._cursor);
-      const w = linewrap(position || this._options.width, { lineBreak: '\n', whitespace: 'all' });
-      const result = w(indent + value).substring(this._cursor).split('\n');
+      const w = linewrap(position || this._options.width, {
+        lineBreak: '\n',
+        whitespace: 'all',
+      });
+      const result = w(indent + value)
+        .substring(this._cursor)
+        .split('\n');
 
       return result;
     }
@@ -131,8 +147,8 @@ class EscPosEncoder {
   }
 
   /**
- * Restore styles and codepages after drawing boxes or lines
-*/
+   * Restore styles and codepages after drawing boxes or lines
+   */
   _restoreState() {
     this.bold(this._state.bold);
     this.italic(this._state.italic);
@@ -140,13 +156,12 @@ class EscPosEncoder {
     this.invert(this._state.invert);
   }
 
-
   /**
- * Initialize the printer
- *
- * @return {object}          Return the object, for easy chaining commands
- *
- */
+   * Initialize the printer
+   *
+   * @return {object}          Return the object, for easy chaining commands
+   *
+   */
   initialize() {
     // this._queue([
     //   0x1b, 0x21,
@@ -158,11 +173,11 @@ class EscPosEncoder {
   }
 
   /**
-* Set left margin
-*
-* @return {object}          Return the object, for easy chaining commands
-*
-*/
+   * Set left margin
+   *
+   * @return {object}          Return the object, for easy chaining commands
+   *
+   */
   marginLeft() {
     // if (!nL) nL = 0
     // if (!nH) nH = 0
@@ -175,7 +190,6 @@ class EscPosEncoder {
     //   throw new Error('Width should be <= 0 and >= 255')
     // }
 
-
     // this._queue([
     //   0x1d, 0x4c, nL, nH,
     //   // 0x1d, 0x4c, .5
@@ -186,24 +200,22 @@ class EscPosEncoder {
   }
 
   /**
- * Print text
- *
- * @param  {string}   value  Text that needs to be printed
- * @param  {number}   wrap   Wrap text after this many positions
- * @return {object}          Return the object, for easy chaining commands
- *
- */
+   * Print text
+   *
+   * @param  {string}   value  Text that needs to be printed
+   * @param  {number}   wrap   Wrap text after this many positions
+   * @return {object}          Return the object, for easy chaining commands
+   *
+   */
   text(value, wrap) {
     const lines = this._wrap(value, wrap);
 
     for (let l = 0; l < lines.length; l++) {
       const bytes = this._encode(lines[l]);
 
-      this._queue([
-        bytes,
-      ]);
+      this._queue([bytes]);
 
-      this._cursor += (lines[l].length * this._state.width);
+      this._cursor += lines[l].length * this._state.width;
 
       if (this._options.width && !this._embedded) {
         this._cursor = this._cursor % this._options.width;
@@ -218,17 +230,15 @@ class EscPosEncoder {
   }
 
   /**
- * Print a newline
- *
- * @return {object}          Return the object, for easy chaining commands
- *
- */
+   * Print a newline
+   *
+   * @return {object}          Return the object, for easy chaining commands
+   *
+   */
   newline() {
     this._flush();
 
-    this._queue([
-      0x0D, 0x0A,
-    ]);
+    this._queue([0x0d, 0x0a]);
 
     if (this._embedded) {
       this._restoreState();
@@ -238,13 +248,13 @@ class EscPosEncoder {
   }
 
   /**
- * Print text, followed by a newline
- *
- * @param  {string}   value  Text that needs to be printed
- * @param  {number}   wrap   Wrap text after this many positions
- * @return {object}          Return the object, for easy chaining commands
- *
- */
+   * Print text, followed by a newline
+   *
+   * @param  {string}   value  Text that needs to be printed
+   * @param  {number}   wrap   Wrap text after this many positions
+   * @return {object}          Return the object, for easy chaining commands
+   *
+   */
   line(value, wrap) {
     this.text(value, wrap);
     this.newline();
@@ -253,12 +263,12 @@ class EscPosEncoder {
   }
 
   /**
- * Underline text
- *
- * @param  {boolean|number}   value  true to turn on underline, false to turn off, or 2 for double underline
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Underline text
+   *
+   * @param  {boolean|number}   value  true to turn on underline, false to turn off, or 2 for double underline
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   underline(value) {
     if (typeof value === 'undefined') {
       value = !this._state.underline;
@@ -266,20 +276,18 @@ class EscPosEncoder {
 
     this._state.underline = value;
 
-    this._queue([
-      0x1b, 0x2d, Number(value),
-    ]);
+    this._queue([0x1b, 0x2d, Number(value)]);
 
     return this;
   }
 
   /**
- * Italic text
- *
- * @param  {boolean}          value  true to turn on italic, false to turn off
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Italic text
+   *
+   * @param  {boolean}          value  true to turn on italic, false to turn off
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   italic(value) {
     if (typeof value === 'undefined') {
       value = !this._state.italic;
@@ -287,20 +295,18 @@ class EscPosEncoder {
 
     this._state.italic = value;
 
-    this._queue([
-      0x1b, 0x34, Number(value),
-    ]);
+    this._queue([0x1b, 0x34, Number(value)]);
 
     return this;
   }
 
   /**
- * Bold text
- *
- * @param  {boolean}          value  true to turn on bold, false to turn off
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Bold text
+   *
+   * @param  {boolean}          value  true to turn on bold, false to turn off
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   bold(value) {
     if (typeof value === 'undefined') {
       value = !this._state.bold;
@@ -308,20 +314,18 @@ class EscPosEncoder {
 
     this._state.bold = value;
 
-    this._queue([
-      0x1B, value ? 0x42 : 0x62
-    ]);
+    this._queue([0x1b, value ? 0x42 : 0x62]);
 
     return this;
   }
 
   /**
- * Change width of text
- *
- * @param  {number}          width    The width of the text, 1 - 8
- * @return {object}                   Return the object, for easy chaining commands
- *
- */
+   * Change width of text
+   *
+   * @param  {number}          width    The width of the text, 1 - 8
+   * @return {object}                   Return the object, for easy chaining commands
+   *
+   */
   width(width) {
     if (typeof width === 'undefined') {
       width = 1;
@@ -338,19 +342,21 @@ class EscPosEncoder {
     this._state.width = width;
 
     this._queue([
-      0x1d, 0x21, (this._state.height - 1) | (this._state.width - 1) << 4,
+      0x1d,
+      0x21,
+      (this._state.height - 1) | ((this._state.width - 1) << 4),
     ]);
 
     return this;
   }
 
   /**
- * Change height of text
- *
- * @param  {number}          height  The height of the text, 1 - 8
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Change height of text
+   *
+   * @param  {number}          height  The height of the text, 1 - 8
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   height(height) {
     if (typeof height === 'undefined') {
       height = 1;
@@ -367,19 +373,21 @@ class EscPosEncoder {
     this._state.height = height;
 
     this._queue([
-      0x1d, 0x21, (this._state.height - 1) | (this._state.width - 1) << 4,
+      0x1d,
+      0x21,
+      (this._state.height - 1) | ((this._state.width - 1) << 4),
     ]);
 
     return this;
   }
 
   /**
- * Invert text
- *
- * @param  {boolean}          value  true to turn on white text on black, false to turn off
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Invert text
+   *
+   * @param  {boolean}          value  true to turn on white text on black, false to turn off
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   invert(value) {
     if (typeof value === 'undefined') {
       value = !this._state.invert;
@@ -387,20 +395,18 @@ class EscPosEncoder {
 
     this._state.invert = value;
 
-    this._queue([
-      0x1d, 0x42, Number(value),
-    ]);
+    this._queue([0x1d, 0x42, Number(value)]);
 
     return this;
   }
 
   /**
- * Change text size
- *
- * @param  {string}          value   small or normal
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Change text size
+   *
+   * @param  {string}          value   small or normal
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   size(value) {
     if (value === 'small') {
       value = 0x01;
@@ -408,20 +414,18 @@ class EscPosEncoder {
       value = 0x00;
     }
 
-    this._queue([
-      0x1b, 0x4d, value,
-    ]);
+    this._queue([0x1b, 0x4d, value]);
 
     return this;
   }
 
   /**
- * Change text alignment
- *
- * @param  {string}          value   left, center or right
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Change text alignment
+   *
+   * @param  {string}          value   left, center or right
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   // align(value) {
   //   const alignments = {
   //     'left': 0x00,
@@ -446,34 +450,30 @@ class EscPosEncoder {
 
   align(value) {
     const alignments = {
-      'left': 0x63,
-      'center': 0x43,
+      left: 0x63,
+      center: 0x43,
     };
 
     if (value in alignments) {
       this._state.align = value;
 
       if (!this._embedded) {
-        this._queue([
-          0x1B, alignments[value],
-        ]);
+        this._queue([0x1b, alignments[value]]);
       }
     } else {
       throw new Error('Unknown alignment');
     }
 
-
     return this;
   }
 
-
   /**
- * Print  table   with End Of Line
- *
- * @param  {[List]}  data  [mandatory]
- * @param  {[String]}  encoding [optional]
- * @return {[Printer]} printer  [the escpos printer instance]
- */
+   * Print  table   with End Of Line
+   *
+   * @param  {[List]}  data  [mandatory]
+   * @param  {[String]}  encoding [optional]
+   * @return {[Printer]} printer  [the escpos printer instance]
+   */
   table(data) {
     const cellWidth = 40 / data.length;
     let lineTxt = '';
@@ -489,39 +489,36 @@ class EscPosEncoder {
 
     const bytes = this._encode(lineTxt);
 
-    this._queue([
-      bytes,
-    ]);
+    this._queue([bytes]);
 
     return this;
   }
 
-
   /**
- * Barcode
- *
- * @param  {string}           value  the value of the barcode
- * @param  {string}           symbology  the type of the barcode
- * @param  {number}           height  height of the barcode
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Barcode
+   *
+   * @param  {string}           value  the value of the barcode
+   * @param  {string}           symbology  the type of the barcode
+   * @param  {number}           height  height of the barcode
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   barcode(value, symbology, height) {
     if (this._embedded) {
       throw new Error('Barcodes are not supported in table cells or boxes');
     }
 
     const symbologies = {
-      'upca': 0x00,
-      'upce': 0x01,
-      'ean13': 0x02,
-      'ean8': 0x03,
-      'code39': 0x04,
-      'coda39': 0x04, /* typo, leave here for backwards compatibility */
-      'itf': 0x05,
-      'codabar': 0x06,
-      'code93': 0x48,
-      'code128': 0x49,
+      upca: 0x00,
+      upce: 0x01,
+      ean13: 0x02,
+      ean8: 0x03,
+      code39: 0x04,
+      coda39: 0x04 /* typo, leave here for backwards compatibility */,
+      itf: 0x05,
+      codabar: 0x06,
+      code93: 0x48,
+      code128: 0x49,
       'gs1-128': 0x50,
       'gs1-databar-omni': 0x51,
       'gs1-databar-truncated': 0x52,
@@ -538,35 +535,34 @@ class EscPosEncoder {
       }
 
       this._queue([
-        0x1d, 0x68, height,
-        0x1d, 0x77, symbology === 'code39' ? 0x02 : 0x03,
+        0x1d,
+        0x68,
+        height,
+        0x1d,
+        0x77,
+        symbology === 'code39' ? 0x02 : 0x03,
       ]);
 
       if (symbology == 'code128' && bytes[0] !== 0x7b) {
         /* Not yet encodeded Code 128, assume data is Code B, which is similar to ASCII without control chars */
 
         this._queue([
-          0x1d, 0x6b, symbologies[symbology],
+          0x1d,
+          0x6b,
+          symbologies[symbology],
           bytes.length + 2,
-          0x7b, 0x42,
+          0x7b,
+          0x42,
           bytes,
         ]);
       } else if (symbologies[symbology] > 0x40) {
         /* Function B symbologies */
 
-        this._queue([
-          0x1d, 0x6b, symbologies[symbology],
-          bytes.length,
-          bytes,
-        ]);
+        this._queue([0x1d, 0x6b, symbologies[symbology], bytes.length, bytes]);
       } else {
         /* Function A symbologies */
 
-        this._queue([
-          0x1d, 0x6b, symbologies[symbology],
-          bytes,
-          0x00,
-        ]);
+        this._queue([0x1d, 0x6b, symbologies[symbology], bytes, 0x00]);
       }
     } else {
       throw new Error('Symbology not supported by printer');
@@ -578,15 +574,15 @@ class EscPosEncoder {
   }
 
   /**
- * QR code
- *
- * @param  {string}           value  the value of the qr code
- * @param  {number}           model  model of the qrcode, either 1 or 2
- * @param  {number}           size   size of the qrcode, a value between 1 and 8
- * @param  {string}           errorlevel  the amount of error correction used, either 'l', 'm', 'q', 'h'
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * QR code
+   *
+   * @param  {string}           value  the value of the qr code
+   * @param  {number}           model  model of the qrcode, either 1 or 2
+   * @param  {number}           size   size of the qrcode, a value between 1 and 8
+   * @param  {string}           errorlevel  the amount of error correction used, either 'l', 'm', 'q', 'h'
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   qrcode(value, model, size) {
     if (this._embedded) {
       throw new Error('QR codes are not supported in table cells or boxes');
@@ -594,9 +590,7 @@ class EscPosEncoder {
 
     /* Force printing the print buffer and moving to a new line */
 
-    this._queue([
-      0x1B, 0x71,
-    ]);
+    this._queue([0x1b, 0x71]);
 
     /* Size */
     // The range is 1 to 8 (0x31 to 0x38).
@@ -641,16 +635,16 @@ class EscPosEncoder {
   }
 
   /**
- * Image
- *
- * @param  {object}         element  an element, like a canvas or image that needs to be printed
- * @param  {number}         width  width of the image on the printer
- * @param  {number}         height  height of the image on the printer
- * @param  {string}         algorithm  the dithering algorithm for making the image black and white
- * @param  {number}         threshold  threshold for the dithering algorithm
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Image
+   *
+   * @param  {object}         element  an element, like a canvas or image that needs to be printed
+   * @param  {number}         width  width of the image on the printer
+   * @param  {number}         height  height of the image on the printer
+   * @param  {string}         algorithm  the dithering algorithm for making the image black and white
+   * @param  {number}         threshold  threshold for the dithering algorithm
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   // image(element, width, height, algorithm, threshold) {
   //   if (this._embedded) {
   //     throw new Error('Images are not supported in table cells or boxes');
@@ -722,7 +716,6 @@ class EscPosEncoder {
   //     return bytes;
   //   };
 
-
   //   if (this._cursor != 0) {
   //     this.newline();
   //   }
@@ -765,12 +758,12 @@ class EscPosEncoder {
   // }
 
   /**
- * Cut paper
- *
- * @param  {string}          value   full or partial. When not specified a full cut will be assumed
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Cut paper
+   *
+   * @param  {string}          value   full or partial. When not specified a full cut will be assumed
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   cut() {
     // if (this._embedded) {
     //     throw new Error('Cut is not supported in table cells or boxes');
@@ -790,14 +783,14 @@ class EscPosEncoder {
   }
 
   /**
- * Pulse
- *
- * @param  {number}          device  0 or 1 for on which pin the device is connected, default of 0
- * @param  {number}          on      Time the pulse is on in milliseconds, default of 100
- * @param  {number}          off     Time the pulse is off in milliseconds, default of 500
- * @return {object}                  Return the object, for easy chaining commands
- *
- */
+   * Pulse
+   *
+   * @param  {number}          device  0 or 1 for on which pin the device is connected, default of 0
+   * @param  {number}          on      Time the pulse is on in milliseconds, default of 100
+   * @param  {number}          off     Time the pulse is off in milliseconds, default of 500
+   * @return {object}                  Return the object, for easy chaining commands
+   *
+   */
   pulse(device, on, off) {
     if (this._embedded) {
       throw new Error('Pulse is not supported in table cells or boxes');
@@ -818,20 +811,18 @@ class EscPosEncoder {
     on = Math.min(500, Math.round(on / 2));
     off = Math.min(500, Math.round(off / 2));
 
-    this._queue([
-      0x1b, 0x70, device ? 1 : 0, on & 0xff, off & 0xff,
-    ]);
+    this._queue([0x1b, 0x70, device ? 1 : 0, on & 0xff, off & 0xff]);
 
     return this;
   }
 
   /**
- * Add raw printer commands
- *
- * @param  {array}           data   raw bytes to be included
- * @return {object}          Return the object, for easy chaining commands
- *
- */
+   * Add raw printer commands
+   *
+   * @param  {array}           data   raw bytes to be included
+   * @return {object}          Return the object, for easy chaining commands
+   *
+   */
   raw(data) {
     this._queue(data);
 
@@ -839,11 +830,11 @@ class EscPosEncoder {
   }
 
   /**
- * Encode all previous commands
- *
- * @return {Uint8Array}         Return the encoded bytes
- *
- */
+   * Encode all previous commands
+   *
+   * @return {Uint8Array}         Return the encoded bytes
+   *
+   */
   encode() {
     this._flush();
 

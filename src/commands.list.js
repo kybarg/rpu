@@ -20,7 +20,7 @@ module.exports = {
     description: 'Data Print(ASCII)-Page Mode ',
   },
   IMAGE_DATA_DOWNLOAD_AND_PRINT_SRAM: {
-    code: 0x4D,
+    code: 0x4d,
     ascii: 'M',
     description: 'Image Data saves in SRAM and print.',
   },
@@ -30,14 +30,15 @@ module.exports = {
     description: 'Big Image Data(Maximum 128K) saves in SRAM and print.',
   },
   IMAGE_DATA_PRINT_SRAM: {
-    code: 0x6D,
+    code: 0x6d,
     ascii: 'm',
     description: 'Print the Image Data',
   },
   PAPER_SETTING: {
-    code: 0x4C,
+    code: 0x4c,
     ascii: 'L',
-    description: 'Load paper on RPU, Feed the paper, print out "LOAD PRINT OK" and cut the paper.',
+    description:
+      'Load paper on RPU, Feed the paper, print out "LOAD PRINT OK" and cut the paper.',
   },
   CUT: {
     code: 0x43,
@@ -60,12 +61,13 @@ module.exports = {
     description: 'Download image data to the Flash ROM.',
   },
   SETTING_READ: {
-    code: 0x4A,
+    code: 0x4a,
     ascii: 'J',
-    description: 'Read the setting status. Response Data’s 5bytes means setting status not Sensor status',
+    description:
+      'Read the setting status. Response Data’s 5bytes means setting status not Sensor status',
   },
   SETTING_WRITE: {
-    code: 0x4B,
+    code: 0x4b,
     ascii: 'K',
     description: 'Save Setting value',
   },
