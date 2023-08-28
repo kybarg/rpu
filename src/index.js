@@ -1,11 +1,14 @@
+const util = require('node:util');
+const { once, EventEmitter } = require('node:events');
 const Debug = require('debug');
 const chalk = require('chalk');
-const EventEmitter = require('events');
 const { SerialPort } = require('serialport');
 const { PacketLengthParser } = require('@serialport/parser-packet-length');
-const fromEvents = require('promise-toolbox/fromEvents');
-const { encode, decode } = require('./utils');
+const { encode, decode, getCurrentTime } = require('./utils');
 const commands = require('./commands.list');
+
+const ENQ = Buffer.from([0x05]);
+const ACK = Buffer.from([0x06]);
 
 const debug = Debug('rpu');
 
@@ -26,6 +29,9 @@ class RPUPrinter {
       ...options,
     });
 
+    this.openAsync = util.promisify(this.port.open.bind(this.port));
+    this.drainAsync = util.promisify(this.port.drain.bind(this.port));
+
     const parser = this.port.pipe(
       new PacketLengthParser({
         delimiter: 0x02,
@@ -35,145 +41,147 @@ class RPUPrinter {
       })
     );
 
-    parser.on('data', (buffer) => {
-      debug(
-        'HOST < RPU',
-        chalk.yellow(buffer.toString('hex')),
-        chalk.green(this.currentCommand)
-      );
-      this.eventEmitter.emit('SUCCESS', buffer);
-      this.enq(false);
-      this.timer(false);
-      this.ack();
-    });
-
     this.port.on('open', () => {
       this.eventEmitter.emit('OPEN');
     });
 
     this.port.on('error', (error) => {
-      this.eventEmitter.emit('ERROR', error);
+      this.eventEmitter.emit('error', error);
     });
 
     this.port.on('close', () => {
-      this.eventEmitter.emit('CLOSE');
+      this.eventEmitter.emit('error', new Error('Port closed'));
     });
 
     this.port.on('data', (buffer) => {
-      if (buffer.length === 1 && buffer[0] === 0x06) {
-        this.timer(true);
-        debug(
-          'HOST < RPU',
-          chalk.yellow(buffer.toString('hex')),
-          chalk.green('ACK')
-        );
+      debug(chalk.yellow('RX'), buffer.toString('hex'));
+      if (Buffer.compare(buffer, ACK) === 0) {
+        this.eventEmitter.emit('ACK');
       }
     });
-  }
 
-  open() {
-    return new Promise((resolve, reject) => {
-      debug('HOST > RPU', chalk.cyan('OPEN'));
-      this.port.open((error) => {
-        if (error) reject(error);
-        debug('HOST < RPU', chalk.yellow('OPENED'));
-        resolve();
-      });
+    parser.on('data', (buffer) => {
+      this.eventEmitter.emit('RESPONSE', buffer);
     });
   }
 
-  enq(start = true) {
-    if (start) {
-      this.enqIntreval = setInterval(() => {
-        debug(
-          'HOST > RPU',
-          chalk.cyan(Buffer.from([0x05]).toString('hex')),
-          chalk.green('ENQ')
-        );
-        this.port.write(Buffer.from([0x05]));
-        this.port.drain();
-      }, 300);
-    } else {
-      clearInterval(this.enqIntreval);
-    }
+  async open() {
+    await this.openAsync();
+    return;
   }
 
-  ack() {
+  async writeToPort(buffer) {
     debug(
-      'HOST > RPU',
-      chalk.cyan(Buffer.from([0x06]).toString('hex')),
-      chalk.green('ACK')
+      chalk.green('TX'),
+      buffer.toString('hex')
     );
-    this.port.write(Buffer.from([0x06]));
-    this.port.drain();
+    this.port.write(buffer);
+    await this.drainAsync();
   }
 
-  timer(set = true) {
-    if (set) {
-      clearTimeout(this.timeout);
-      this.timeout = setTimeout(() => {
-        this.eventEmitter.emit('TIMED_OUT', new Error('No response in 1s'));
-      }, 1000);
-    } else {
-      clearTimeout(this.timeout);
+  async ack() {
+    try {
+      await this.writeToPort(ACK);
+    } catch (error) {
+      // Can ignore for now
     }
+
+    return;
   }
 
-  command(name, params) {
+  async poll(skipFirst = false) {
+    // Maximum number of retries allowed
+    const maxRetries = 5;
+
+    // Counter to keep track of the number of retries made
+    let retries = 0;
+
+    // Maximum time to wait for a response
+    const commandTimeout = 100;
+
+    // Time to wait between retries
+    const retryInterval = 300;
+
+    let skip = skipFirst;
+
+    // Keep trying until the maximum number of retries is reached
+    while (retries < maxRetries) {
+      try {
+        // Send the command to the port
+        if (!skip) await this.writeToPort(ENQ);
+
+        skip = false;
+
+        // Wait for either an 'ACK', 'RESPONSE', or a 'TIMEOUT', whichever comes first
+        const result = await Promise.race([
+          // If 'ACK' event is emitted, resolve with 'ACK'
+          once(this.eventEmitter, 'ACK').then(() => 'ACK'),
+
+          // If 'RESPONSE' event is emitted, resolve with the response
+          once(this.eventEmitter, 'RESPONSE').then(([response]) => response),
+
+          // If no event is emitted within the commandTimeout duration, resolve with 'TIMEOUT'
+          new Promise((resolve) =>
+            setTimeout(resolve, commandTimeout, 'TIMEOUT')
+          ),
+        ]);
+
+        // Handle the different possible outcomes:
+
+        // If the device acknowledges the command, reset the retry counter
+        if (result === 'ACK') {
+          retries = 0;
+        }
+        // If the command times out, increment the retry counter
+        else if (result === 'TIMEOUT') {
+          retries += 1;
+        }
+        // If a valid response is received, return it
+        else {
+          await this.ack();
+
+          return result;
+        }
+      } catch (error) {
+        // If there's any other error (e.g., writing to the port fails), increment the retry counter
+        retries += 1;
+      }
+
+      // If not all retries have been exhausted, wait for a while before the next retry
+      if (retries < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, retryInterval));
+      }
+    }
+
+    // If the maximum number of retries is reached without a valid response, throw an error
+    throw new Error(`COMMAND_FAILED`);
+  }
+
+  async command(name, params) {
     if (!commands[name]) {
-      return Promise.reject(new Error('Unknown command'));
+      throw new Error('COMMAND_UNKNOWN');
     }
 
     if (this.processing) {
-      return Promise.reject(new Error('Processing another command'));
+      throw new Error('PROCESSING_ANOTHER_COMMAND');
     } else {
       this.processing = true;
     }
 
     this.currentCommand = name;
 
-    const data = encode(name, params);
-    debug(
-      'HOST > RPU',
-      chalk.cyan(Buffer.from(data).toString('hex')),
-      chalk.green(name)
-    );
+    try {
+      const data = encode(name, params);
+      await this.writeToPort(data);
+      const result = await this.poll(true);
 
-    this.port.write(data);
-    this.port.drain((error) => {
-      if (error) {
-        this.eventEmitter.emit('ERROR', error);
-      } else {
-        this.enq(true);
-        this.timer(true);
-      }
-    });
-
-    return new Promise((resolve, reject) => {
-      fromEvents(
-        this.eventEmitter,
-        ['SUCCESS'],
-        ['ERROR', 'TIMED_OUT', 'CLOSE']
-      )
-        .then(({ args }) => {
-          this.processing = false;
-          this.currentCommand = null;
-          try {
-            const result = decode(this.currentCommand, args.slice()[0]);
-            resolve(result);
-          } catch (error) {
-            reject(error);
-          }
-        })
-        .catch(({ args }) => {
-          this.processing = false;
-          this.currentCommand = null;
-          reject(args);
-        })
-        .finally(() => {
-          this.enq(false);
-        });
-    });
+      return decode(this.currentCommand, result);
+    } catch (error) {
+      throw error;
+    } finally {
+      this.processing = false;
+      this.currentCommand = null;
+    }
   }
 }
 

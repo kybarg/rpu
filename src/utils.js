@@ -1,60 +1,52 @@
 const commands = require('./commands.list');
 const errors = require('./errors.list');
 
+const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
+
 function CRC8(array) {
-  return Array.from(array).reduce((checksum, item) => checksum ^ item, 0);
+  return array.reduce((checksum, item) => checksum ^ item, 0);
 }
 
 function encode(name, params = []) {
-  const { code } = commands[name];
-
-  const STX = 0x02;
-  const MI = code;
-  const DATA = params;
-  const ETX = 0x03;
-
-  const length = [MI, ...DATA].length;
+  const { code: MI } = commands[name];
+  const length = [MI, ...params].length;
   const LEN1 = length & 0xff;
   const LEN2 = (length >> 8) & 0xff;
 
-  const BCC = CRC8([LEN1, LEN2, MI, ...DATA, ETX]);
+  const BCC = CRC8([LEN1, LEN2, MI, ...params, 0x03]);
 
-  return Buffer.from([STX, LEN1, LEN2, MI, ...DATA, ETX, BCC]);
+  return Buffer.from([0x02, LEN1, LEN2, MI, ...params, 0x03, BCC]);
 }
 
 function decode(command, buffer) {
-  const result = {};
-
-  if (buffer.length < 6) {
-    result.success = false;
-    result.message = 'Broken packet';
-    result.data = [...buffer];
+  if (buffer < 6 || buffer[0] !== 0x02) {
+    throw new Error('Broken packet');
   }
 
   const MI = buffer[3];
-  const DATA_LENGTH = buffer.slice(1, 3).readUInt16LE();
+  const DATA_LENGTH = buffer.slice(1, 3).readUInt16LE(0);
   const DATA = buffer.slice(4, DATA_LENGTH + 3);
   const BCC = buffer[buffer.length - 1];
   const BCC_CHECK = CRC8(buffer.slice(1, -1));
 
-  if (BCC !== BCC_CHECK) {
-    result.success = false;
-    result.message = 'CRC check failed';
-
-    return result;
+  if (DATA_LENGTH !== DATA.length + 1) {
+    throw new Error('Packet length error');
   }
 
-  // normal
+  if (BCC !== BCC_CHECK) {
+    throw new Error('CRC check failed');
+  }
+
+  const result = {};
+
+  // 'O' Normal end
   if (MI === 0x4f) {
     result.success = true;
 
     if (command === 'PROGRAM_VERSION_READ') {
       result.data = {
         printerName: DATA.slice(0, 3).toString(),
-        version: `${DATA.slice(3, 5).readInt8()}.${DATA.slice(
-          4,
-          6
-        ).readInt8()}`,
+        version: `${DATA[3]}.${DATA[4]}`,
       };
     } else if (command === 'SETTING_READ') {
       const fonts = {
@@ -76,13 +68,14 @@ function decode(command, buffer) {
         0: '256KB',
         1: '512KB',
       };
+
       result.data = {
         sramType: types[DATA[0]],
       };
     }
   }
 
-  // error
+  // 'F' Abnormal end (error occur)
   if (MI === 0x46) {
     result.success = false;
 
@@ -99,59 +92,29 @@ function decode(command, buffer) {
     };
   }
 
-  // status
+  // 'S' Status (Sensor) data
   if (MI === 0x53) {
     result.success = DATA[0] === 0x30;
+
     result.data = {
-      hasPaper: !(DATA[3] & (1 << 7)),
-      settingPaper: !(DATA[3] & (1 << 6)),
-      lever: Boolean(DATA[3] & (1 << 4)),
-      jamed: Boolean(DATA[3] & (1 << 3)),
-      cutter: Boolean(DATA[3] & (1 << 1)),
+      paper: !(DATA[3] & (1 << 7)),
+      paperSetting: !(DATA[3] & (1 << 6)),
+      leverSensor: !!(DATA[3] & (1 << 4)),
+      jamSensor: !!(DATA[3] & (1 << 3)),
+      cutterSensor: !!(DATA[3] & (1 << 1)),
     };
   }
-
-  // if (MI === 0x4F || MI === 0x46 || MI === 0x53) {
-  //   result.success = DATA[0] === 0x30;
-
-  //   if (!result.success) {
-  //     const statuses = {
-  //       0x30: 'normal',
-  //       0x31: 'before action',
-  //       0x38: 'after action'
-  //     }
-
-  //     result.error = {
-  //       code: DATA[2],
-  //       message: errors[DATA[2]],
-  //       status: statuses[DATA[0]],
-  //     }
-  //   }
-
-  //   result.data = {
-  //     paper: Boolean(DATA[3] & (1 << 7)),
-  //     paperSetting: Boolean(DATA[3] & (1 << 6)),
-  //     lever: Boolean(DATA[3] & (1 << 4)),
-  //     jamed: Boolean(DATA[3] & (1 << 3)),
-  //     cutter: Boolean(DATA[3] & (1 << 1)),
-  //   };
-  // }
-
-  /**
-   * 57.52 -version
-   * cutter 0
-   * paper1 1
-   * paper2 1
-   * jam 0
-   * lever 0
-   * paper load 0
-   * near end 1
-   */
 
   return result;
 }
 
+function getCurrentTime() {
+  return new Date().toISOString().slice(11, -1);
+}
+
 module.exports = {
+  getCurrentTime,
+  delay,
   encode,
   decode,
   CRC8,
