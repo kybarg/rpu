@@ -426,28 +426,6 @@ class EscPosEncoder {
    * @return {object}                  Return the object, for easy chaining commands
    *
    */
-  // align(value) {
-  //   const alignments = {
-  //     'left': 0x00,
-  //     'center': 0x01,
-  //     'right': 0x02,
-  //   };
-
-  //   if (value in alignments) {
-  //     this._state.align = value;
-
-  //     if (!this._embedded) {
-  //       this._queue([
-  //         0x1B, 0x6A, alignments[value],
-  //       ]);
-  //     }
-  //   } else {
-  //     throw new Error('Unknown alignment');
-  //   }
-
-  //   return this;
-  // }
-
   align(value) {
     const alignments = {
       left: 0x63,
@@ -635,129 +613,6 @@ class EscPosEncoder {
   }
 
   /**
-   * Image
-   *
-   * @param  {object}         element  an element, like a canvas or image that needs to be printed
-   * @param  {number}         width  width of the image on the printer
-   * @param  {number}         height  height of the image on the printer
-   * @param  {string}         algorithm  the dithering algorithm for making the image black and white
-   * @param  {number}         threshold  threshold for the dithering algorithm
-   * @return {object}                  Return the object, for easy chaining commands
-   *
-   */
-  // image(element, width, height, algorithm, threshold) {
-  //   if (this._embedded) {
-  //     throw new Error('Images are not supported in table cells or boxes');
-  //   }
-
-  //   if (width % 8 !== 0) {
-  //     throw new Error('Width must be a multiple of 8');
-  //   }
-
-  //   if (height % 8 !== 0) {
-  //     throw new Error('Height must be a multiple of 8');
-  //   }
-
-  //   if (typeof algorithm === 'undefined') {
-  //     algorithm = 'threshold';
-  //   }
-
-  //   if (typeof threshold === 'undefined') {
-  //     threshold = 128;
-  //   }
-
-  //   const canvas = createCanvas(width, height);
-  //   const context = canvas.getContext('2d');
-  //   context.drawImage(element, 0, 0, width, height);
-  //   let image = context.getImageData(0, 0, width, height);
-
-  //   image = Flatten.flatten(image, [0xff, 0xff, 0xff]);
-
-  //   switch (algorithm) {
-  //   case 'threshold': image = Dither.threshold(image, threshold); break;
-  //   case 'bayer': image = Dither.bayer(image, threshold); break;
-  //   case 'floydsteinberg': image = Dither.floydsteinberg(image); break;
-  //   case 'atkinson': image = Dither.atkinson(image); break;
-  //   }
-
-  //   const getPixel = (x, y) => x < width && y < height ? (image.data[((width * y) + x) * 4] > 0 ? 0 : 1) : 0;
-
-  //   const getColumnData = (width, height) => {
-  //     const data = [];
-
-  //     for (let s = 0; s < Math.ceil(height / 24); s++) {
-  //       const bytes = new Uint8Array(width * 3);
-
-  //       for (let x = 0; x < width; x++) {
-  //         for (let c = 0; c < 3; c++) {
-  //           for (let b = 0; b < 8; b++) {
-  //             bytes[(x * 3) + c] |= getPixel(x, (s * 24) + b + (8 * c)) << (7 - b);
-  //           }
-  //         }
-  //       }
-
-  //       data.push(bytes);
-  //     }
-
-  //     return data;
-  //   };
-
-  //   const getRowData = (width, height) => {
-  //     const bytes = new Uint8Array((width * height) >> 3);
-
-  //     for (let y = 0; y < height; y++) {
-  //       for (let x = 0; x < width; x = x + 8) {
-  //         for (let b = 0; b < 8; b++) {
-  //           bytes[(y * (width >> 3)) + (x >> 3)] |= getPixel(x + b, y) << (7 - b);
-  //         }
-  //       }
-  //     }
-
-  //     return bytes;
-  //   };
-
-  //   if (this._cursor != 0) {
-  //     this.newline();
-  //   }
-
-  //   /* Encode images with ESC * */
-
-  //   if (this._options.imageMode == 'column') {
-  //     this._queue([
-  //       0x1b, 0x33, 0x24,
-  //     ]);
-
-  //     getColumnData(width, height).forEach((bytes) => {
-  //       this._queue([
-  //         0x1b, 0x2a, 0x21,
-  //         (width) & 0xff, (((width) >> 8) & 0xff),
-  //         bytes,
-  //         0x0a,
-  //       ]);
-  //     });
-
-  //     this._queue([
-  //       0x1b, 0x32,
-  //     ]);
-  //   }
-
-  //   /* Encode images with GS v */
-
-  //   if (this._options.imageMode == 'raster') {
-  //     this._queue([
-  //       0x1d, 0x76, 0x30, 0x00,
-  //       (width >> 3) & 0xff, (((width >> 3) >> 8) & 0xff),
-  //       height & 0xff, ((height >> 8) & 0xff),
-  //       getRowData(width, height),
-  //     ]);
-  //   }
-
-  //   this._flush();
-
-  //   return this;
-  // }
-
-  /**
    * Cut paper
    *
    * @param  {string}          value   full or partial. When not specified a full cut will be assumed
@@ -765,53 +620,11 @@ class EscPosEncoder {
    *
    */
   cut() {
-    // if (this._embedded) {
-    //     throw new Error('Cut is not supported in table cells or boxes');
-    // }
-
-    // let data = 0x00;
-
-    // if (value == 'partial') {
-    //   data = 0x01;
-    // }
-
-    // this._queue([
-    //   0x1d, 0x56, data,
-    // ]);
-
-    return this;
-  }
-
-  /**
-   * Pulse
-   *
-   * @param  {number}          device  0 or 1 for on which pin the device is connected, default of 0
-   * @param  {number}          on      Time the pulse is on in milliseconds, default of 100
-   * @param  {number}          off     Time the pulse is off in milliseconds, default of 500
-   * @return {object}                  Return the object, for easy chaining commands
-   *
-   */
-  pulse(device, on, off) {
     if (this._embedded) {
-      throw new Error('Pulse is not supported in table cells or boxes');
+        throw new Error('Cut is not supported in table cells or boxes');
     }
 
-    if (typeof device === 'undefined') {
-      device = 0;
-    }
-
-    if (typeof on === 'undefined') {
-      on = 100;
-    }
-
-    if (typeof off === 'undefined') {
-      off = 500;
-    }
-
-    on = Math.min(500, Math.round(on / 2));
-    off = Math.min(500, Math.round(off / 2));
-
-    this._queue([0x1b, 0x70, device ? 1 : 0, on & 0xff, off & 0xff]);
+    // WARNING: for RPU pritner thre is separate command for cutting paper
 
     return this;
   }
