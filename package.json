@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint src",
     "format": "prettier src --write",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:watch": "jest --watch",
+    "test": "jest --coverage"
   },
   "author": "",
   "license": "MIT",
@@ -18,24 +19,20 @@
     "printer"
   ],
   "dependencies": {
-    "@serialport/parser-packet-length": "^10.3.0",
+    "@serialport/parser-packet-length": "^11.0.1",
     "chalk": "^4.1.2",
-    "codepage-encoder": "^1.0.0",
     "debug": "^4.3.4",
-    "escpos": "^3.0.0-alpha.6",
-    "escpos-serialport": "^3.0.0-alpha.4",
     "linewrap": "^0.2.1",
-    "moment": "^2.29.4",
-    "promise-toolbox": "^0.21.0",
-    "serialport": "^10.4.0"
+    "serialport": "^11.0.1"
   },
   "devDependencies": {
-    "eslint": "^8.21.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint": "^8.48.0",
+    "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-node": "^11.1.0",
-    "prettier": "^2.7.1"
+    "jest": "^29.6.4",
+    "prettier": "^3.0.2"
   },
-  "engines" : {
-    "node" : ">=14.0.0"
+  "engines": {
+    "node": ">=14.0.0"
   }
 }
