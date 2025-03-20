@@ -1,4 +1,4 @@
-module.exports = {
+const commands = {
   CHECK_SENSOR_STATUS: {
     code: 0x53,
     ascii: 'S',
@@ -87,3 +87,5 @@ module.exports = {
     description: 'Device Information Data Read.',
   },
 };
+
+module.exports = commands;

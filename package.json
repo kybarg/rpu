@@ -2,7 +2,7 @@
   "name": "@kybarg/rpu",
   "version": "0.0.5",
   "description": "Node.js implementation of RPU printer protocol",
-  "main": "src",
+  "main": "./src/index.js",
   "scripts": {
     "lint": "eslint src",
     "format": "prettier src --write",
@@ -19,11 +19,11 @@
     "printer"
   ],
   "dependencies": {
-    "@serialport/parser-packet-length": "^11.0.1",
+    "@serialport/parser-packet-length": "^13.0.0",
     "chalk": "^4.1.2",
     "debug": "^4.3.4",
     "linewrap": "^0.2.1",
-    "serialport": "^11.0.1"
+    "serialport": "^13.0.0"
   },
   "devDependencies": {
     "eslint": "^8.48.0",
@@ -33,6 +33,7 @@
     "prettier": "^3.0.2"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=20.0.0"
   }
 }

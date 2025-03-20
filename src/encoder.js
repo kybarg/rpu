@@ -621,7 +621,7 @@ class EscPosEncoder {
    */
   cut() {
     if (this._embedded) {
-        throw new Error('Cut is not supported in table cells or boxes');
+      throw new Error('Cut is not supported in table cells or boxes');
     }
 
     // WARNING: for RPU pritner thre is separate command for cutting paper

@@ -4,7 +4,7 @@ const Debug = require('debug');
 const chalk = require('chalk');
 const { SerialPort } = require('serialport');
 const { PacketLengthParser } = require('@serialport/parser-packet-length');
-const { encode, decode, getCurrentTime } = require('./utils');
+const { encode, decode } = require('./utils');
 const commands = require('./commands.list');
 
 const ENQ = Buffer.from([0x05]);
@@ -71,10 +71,7 @@ class RPUPrinter {
   }
 
   async writeToPort(buffer) {
-    debug(
-      chalk.green('TX'),
-      buffer.toString('hex')
-    );
+    debug(chalk.green('TX'), buffer.toString('hex'));
     this.port.write(buffer);
     await this.drainAsync();
   }
@@ -176,8 +173,6 @@ class RPUPrinter {
       const result = await this.poll(true);
 
       return decode(this.currentCommand, result);
-    } catch (error) {
-      throw error;
     } finally {
       this.processing = false;
       this.currentCommand = null;
